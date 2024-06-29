@@ -1,122 +1,82 @@
 # importing libraries
+import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-
-from sklearn.ensemble import RandomForestClassifier
+import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score
 import warnings
 warnings.filterwarnings('ignore')
 
+# Loading and exploring data
+df = pd.read_csv('IRIS.csv')
 
-# Loading and exploring the data
-df = pd.read_csv('Titanic-Dataset.csv')
-
-df.head()
-
-df.duplicated().sum()
-
+df.shape
 df.isnull().sum()
-
-df.groupby('Sex')['Age'].mean().reset_index()
-df['Age'].fillna(df['Age'].mean(), inplace=True)
-df.drop('Cabin', axis=1, inplace=True)
-df.dropna(inplace=True)
+df.duplicated().sum()
+df.drop_duplicates(inplace=True)
+df.duplicated().sum()
+df.shape
 df.info()
+df.describe()
 
-# Analysing the data
+# Analysing data
 df.head()
-gender = df['Sex'].value_counts()
 
-plt.figure(figsize=(8,6))
-plt.pie(gender, labels=['Male', 'Female'],autopct='%.1f%%', colors=['blue','pink'])
-plt.legend()
-plt.title('Male and Female')
+spcounts = df['species'].value_counts()
+
+plt.figure(figsize=(10,10))
+spcounts.plot(kind='pie', autopct='%1.2f%%', startangle=100)
+plt.title('Species')
+plt.legend(loc='upper left', labels=spcounts.index)
 plt.show()
 
-sns.histplot(data=df, x='Age', bins=30, kde=True)
-plt.title('Age Distribution')
-plt.xlabel('Age')
-plt.ylabel('Frequency')
+plt.scatter(df['sepal_length'], df['sepal_width'])
+plt.xlabel('Sepal Length')
+plt.ylabel('Sepal Width')
+plt.title("Sepal's Length and Width")
 plt.show()
 
-sur_sex = df[['Survived','Sex']].value_counts().reset_index()
-
-plt.figure(figsize=(8,6))
-sns.barplot(data=sur_sex, x=sur_sex['Survived'], y=sur_sex['count'], hue=sur_sex['Sex'])
-plt.title('Survived Frequency')
-plt.xlabel('Survived')
-plt.ylabel('Frequency')
+sns.lmplot(x="sepal_length",y="sepal_width",hue="species",palette="viridis",data=df)
+plt.title("Sepal's Length VS Width")
 plt.show()
 
-Emb_sex = df[['Embarked', 'Sex']].value_counts().reset_index()
-
-plt.figure(figsize=(8,6))
-sns.barplot(data=Emb_sex, x=Emb_sex['Embarked'], y=Emb_sex['count'], hue=Emb_sex['Sex'])
-plt.title('Embarked & Sex Frequency')
-plt.xlabel('Embarked')
-plt.ylabel('Frequency')
+plt.scatter(df['petal_length'], df['petal_width'])
+plt.xlabel('Petal Length')
+plt.ylabel('Petal Width')
+plt.title("Petal's Length and Width")
 plt.show()
 
-sur_emb = df[['Survived', 'Embarked']].value_counts().reset_index()
-
-plt.figure(figsize=(8,6))
-sns.barplot(data=sur_emb, x=sur_emb['Survived'], y=sur_emb['count'], hue=sur_emb['Embarked'])
-plt.title('Survived & Embarked Frequency')
-plt.xlabel('Survived')
-plt.ylabel('Frequency')
-plt.show()
-
-sur_class = df[['Survived', 'Pclass']].value_counts().reset_index()
-
-plt.figure(figsize=(8,6))
-sns.barplot(data=sur_class, x=sur_class['Survived'], y=sur_class['count'], hue=sur_class['Pclass'])
-plt.title('Survived & Pclass Frequency')
-plt.xlabel('Survived')
-plt.ylabel('Frequency')
-plt.show()
-
-siblings = df['SibSp'].value_counts().reset_index()
-
-plt.figure(figsize=(8,6))
-sns.barplot(x=siblings['SibSp'], y=siblings['count'])
-plt.title('Siblings or Spouses Frequency')
-plt.show()
-
-sur_siblings = df[['Survived', 'SibSp']].value_counts().reset_index()
-
-plt.figure(figsize=(8,6))
-sns.barplot(data=sur_siblings, x=sur_siblings['Survived'], y=sur_siblings['count'], hue=sur_siblings['SibSp'])
-plt.title('Survived & SibSp Frequency')
-plt.legend(loc='upper right')
-plt.xlabel('Survived')
-plt.ylabel('Frequency')
+sns.lmplot(x="petal_length",y="petal_width",hue="species",palette="viridis",data=df)
+plt.title("Petal's Length VS Width")
 plt.show()
 
 # Building model
+label = LabelEncoder()
+df['species'] = label.fit_transform(df['species'])
 
-test = df.drop(['PassengerId', 'Name', 'Ticket'], axis=1)
+df.head()
 
-label_encoder = LabelEncoder()
-test['Sex'] = label_encoder.fit_transform(test['Sex'])
-test['Embarked'] = label_encoder.fit_transform(test['Embarked'])
+x = df.drop('species', axis=1)
+y = df['species']
 
-x = test.drop('Survived', axis=1)
-y = test['Survived']
-X_train, x_test, Y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=11)
+x_train, x_test, y_train, y_test = train_test_split(x,y,test_size=0.3,random_state=45)
 
-model_logistic = LogisticRegression()
-model_logistic.fit(X_train,Y_train)
+df.corr()
 
-model_logistic.score(X_train,Y_train)
+plt.figure(figsize=(10, 8))
+sns.heatmap(df.corr(), annot=True, cmap='mako', fmt=".2f")
+plt.title('Correlation Heatmap')
+plt.show()
 
-model_logistic.score(x_test,y_test)
+Logistic = LogisticRegression(max_iter=10)
+Logistic.fit(x_train,y_train)
 
-model_random = RandomForestClassifier()
-model_random.fit(X_train,Y_train)
+Logistic.score(x_train, y_train)
 
-model_random.score(X_train,Y_train)
+y_predict = Logistic.predict(x_test)
+accuracy = accuracy_score(y_test, y_predict)
 
-model_random.score(x_test,y_test)
+print(accuracy)
